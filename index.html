@@ -1,417 +1,1525 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-mode="day">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ResearchAI Pro - AI-Powered Paper Recommendations</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        .gradient-bg {
-            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-            background-size: 400% 400%;
-            animation: gradient 15s ease infinite;
-        }
-        
-        .glassmorphism {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .neumorph {
-            box-shadow: 
-                20px 20px 60px #1a1a1a,
-                -20px -20px 60px #242424;
-        }
-        
-        .typing::after {
-            content: '|';
-            animation: blink 1s infinite;
-        }
-        
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ResearchAI Pro — AI-Powered Paper Recommendations</title>
+<meta name="description" content="Search the open scholarly index in real time, save what matters, and export a citation in one click.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%231C1812'/%3E%3Cpath d='M16 14h32v36l-16-9-16 9z' fill='%23B68A3D'/%3E%3C/svg%3E">
 
-        .paper-card {
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        
-        .paper-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-        }
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500;1,6..72,600&family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-        #canvas-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-        }
-    </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+<script>
+  // Set reduced-motion flag on <html> before paint, so CSS can react with zero flash.
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.documentElement.classList.add('reduce-motion');
+  }
+</script>
+
+<style>
+/* ============================================================
+   TOKENS — The Reading Room
+   ============================================================ */
+:root{
+  --ink:#1C1812;
+  --ink-soft:#332B1F;
+  --paper:#EDE3CC;
+  --paper-deep:#E2D4B2;
+  --card:#F7F1E1;
+  --card-edge:#DCCBA0;
+  --oxblood:#8C2F26;
+  --oxblood-deep:#6E241D;
+  --lamp:#1F4F3D;
+  --lamp-soft:#2C6B51;
+  --brass:#B68A3D;
+  --brass-bright:#D5AE63;
+  --graphite:#6B6356;
+  --line: rgba(28,24,18,.18);
+  --line-strong: rgba(28,24,18,.32);
+  --shadow: rgba(28,24,18,.28);
+
+  --font-display:'Newsreader', serif;
+  --font-ui:'Public Sans', sans-serif;
+  --font-mono:'IBM Plex Mono', monospace;
+
+  --max: 1240px;
+  --dur: .5s;
+  --ease: cubic-bezier(.22,.61,.36,1);
+}
+html[data-mode="night"]{
+  --ink:#ECE2C7;
+  --ink-soft:#D8CCA9;
+  --paper:#120F0A;
+  --paper-deep:#0B0905;
+  --card:#1B160E;
+  --card-edge:#352B19;
+  --oxblood:#CE5A4D;
+  --oxblood-deep:#A8443A;
+  --lamp:#4FA383;
+  --lamp-soft:#3D8568;
+  --brass:#D8B36C;
+  --brass-bright:#EFCB85;
+  --graphite:#B7AC8C;
+  --line: rgba(236,226,199,.14);
+  --line-strong: rgba(236,226,199,.26);
+  --shadow: rgba(0,0,0,.6);
+}
+
+*,*::before,*::after{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+html.reduce-motion{scroll-behavior:auto;}
+html.reduce-motion *,html.reduce-motion *::before,html.reduce-motion *::after{
+  animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;
+}
+body{
+  margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-ui);
+  -webkit-font-smoothing:antialiased;transition:background var(--dur) var(--ease), color var(--dur) var(--ease);
+  overflow-x:hidden;
+}
+img{max-width:100%;display:block;}
+a{color:inherit;}
+button{font-family:inherit;}
+::selection{background:var(--brass);color:var(--ink);}
+
+.skip-link{
+  position:absolute;left:1rem;top:-3.5rem;background:var(--ink);color:var(--paper);
+  padding:.75rem 1.25rem;border-radius:4px;font-family:var(--font-mono);font-size:.85rem;z-index:999;
+  transition:top .2s var(--ease);
+}
+.skip-link:focus{top:1rem;}
+:focus-visible{outline:2px solid var(--brass-bright);outline-offset:3px;border-radius:3px;}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 clamp(1.25rem,4vw,3rem);position:relative;z-index:2;}
+
+.eyebrow{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.18em;font-size:.72rem;color:var(--brass);
+  display:flex;align-items:center;gap:.6em;}
+.eyebrow::before{content:'';width:18px;height:1px;background:var(--brass);display:inline-block;}
+
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:600;margin:0;line-height:1.08;letter-spacing:-.01em;}
+p{line-height:1.65;color:var(--ink-soft);}
+
+.section{padding:clamp(4rem,8vw,7rem) 0;position:relative;overflow:hidden;}
+.section-head{max-width:660px;margin-bottom:clamp(2.25rem,5vw,3.5rem);position:relative;z-index:2;}
+.section-head h2{font-size:clamp(2rem,4vw,2.9rem);margin-top:.6rem;}
+.section-head p{font-size:1.05rem;margin-top:1rem;}
+
+.watermark{
+  position:absolute;font-family:var(--font-display);font-weight:600;font-size:clamp(6rem,17vw,13rem);
+  color:var(--ink);opacity:.035;top:50%;left:50%;transform:translate(-50%,-50%);white-space:nowrap;
+  pointer-events:none;letter-spacing:-.02em;z-index:0;
+}
+
+/* paper grain */
+.grain{position:fixed;inset:0;pointer-events:none;z-index:1;mix-blend-mode:multiply;opacity:.05;
+  background-image:radial-gradient(var(--ink) .6px, transparent .6px);background-size:3px 3px;}
+html[data-mode="night"] .grain{mix-blend-mode:screen;opacity:.04;}
+
+/* dust motes */
+#motes{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.mote{position:absolute;border-radius:50%;background:var(--brass);opacity:.18;will-change:transform,opacity;}
+html.reduce-motion #motes{display:none;}
+
+/* progress ribbon */
+.progress-ribbon{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--oxblood),var(--brass));
+  z-index:86;width:0%;}
+
+/* preloader */
+#preloader{position:fixed;inset:0;z-index:9999;background:var(--ink);color:var(--paper);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1rem;
+  transition:opacity .6s ease, visibility .6s ease;}
+#preloader.hide{opacity:0;visibility:hidden;pointer-events:none;}
+html.reduce-motion #preloader{display:none;}
+.preload-mark{width:60px;height:60px;border-radius:8px;background:linear-gradient(155deg,var(--brass-bright),var(--brass));
+  display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:600;color:#1C1812;font-size:1.2rem;}
+.preload-bar{width:170px;height:2px;background:rgba(237,227,204,.18);overflow:hidden;border-radius:2px;}
+.preload-bar span{display:block;height:100%;width:0%;background:var(--brass-bright);}
+.preload-label{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(237,227,204,.55);}
+
+/* custom cursor */
+#cursorDot{position:fixed;top:0;left:0;width:8px;height:8px;border-radius:50%;background:var(--oxblood);
+  pointer-events:none;z-index:9998;transform:translate(-50%,-50%);mix-blend-mode:difference;}
+#cursorRing{position:fixed;top:0;left:0;width:32px;height:32px;border-radius:50%;border:1.5px solid var(--brass);
+  pointer-events:none;z-index:9998;transform:translate(-50%,-50%);
+  transition:width .25s var(--ease),height .25s var(--ease),border-color .25s var(--ease);}
+#cursorRing.active{width:52px;height:52px;border-color:var(--oxblood);}
+body.custom-cursor, body.custom-cursor a, body.custom-cursor button, body.custom-cursor input, body.custom-cursor textarea{cursor:none;}
+@media (pointer:coarse){#cursorDot,#cursorRing{display:none !important;}}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn{
+  font-family:var(--font-ui);font-weight:600;font-size:.92rem;letter-spacing:.01em;
+  padding:.85rem 1.6rem;border-radius:3px;border:1.5px solid var(--ink);cursor:pointer;
+  display:inline-flex;align-items:center;gap:.55em;justify-content:center;
+  transition:transform .2s var(--ease), background .25s var(--ease), color .25s var(--ease), box-shadow .25s var(--ease);
+  background:transparent;color:var(--ink);
+}
+.btn:hover{transform:translateY(-2px);}
+.btn:active{transform:translateY(0) scale(.97);}
+.btn-solid{background:var(--ink);color:var(--paper);}
+.btn-solid:hover{background:var(--oxblood);border-color:var(--oxblood);box-shadow:0 10px 24px -10px var(--shadow);}
+.btn-brass{background:var(--brass);border-color:var(--brass);color:var(--ink);}
+.btn-brass:hover{background:var(--brass-bright);border-color:var(--brass-bright);box-shadow:0 10px 24px -10px var(--shadow);}
+.btn-ghost{border-color:var(--ink);}
+.btn-ghost:hover{background:var(--ink);color:var(--paper);}
+.btn-sm{padding:.5rem 1rem;font-size:.78rem;}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none;}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+header.nav{
+  position:fixed;top:0;left:0;right:0;z-index:80;background:var(--paper);border-bottom:1px solid var(--line);
+  transition:background var(--dur) var(--ease), border-color var(--dur) var(--ease), box-shadow .3s var(--ease);
+}
+header.nav.scrolled{box-shadow:0 8px 24px -16px var(--shadow);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;padding:.95rem clamp(1.25rem,4vw,3rem);
+  max-width:var(--max);margin:0 auto;}
+.brand{display:flex;align-items:center;gap:.65rem;font-family:var(--font-display);font-weight:600;font-size:1.25rem;
+  text-decoration:none;color:var(--ink);}
+.brand .plate{width:34px;height:34px;border-radius:4px;background:linear-gradient(155deg,var(--brass-bright),var(--brass));
+  display:flex;align-items:center;justify-content:center;color:#1C1812;font-family:var(--font-mono);font-weight:600;font-size:.9rem;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.25);}
+.nav-links{display:flex;gap:clamp(1rem,2vw,1.9rem);align-items:center;list-style:none;margin:0;padding:0;}
+.nav-links a{text-decoration:none;font-size:.9rem;font-weight:600;color:var(--ink-soft);position:relative;padding:.3rem 0;}
+.nav-links a::after{content:'';position:absolute;left:0;bottom:-2px;width:0;height:1.5px;background:var(--oxblood);
+  transition:width .25s var(--ease);}
+.nav-links a:hover{color:var(--ink);}
+.nav-links a:hover::after{width:100%;}
+.nav-actions{display:flex;align-items:center;gap:.85rem;}
+.lamp-toggle{width:42px;height:42px;border-radius:50%;border:1.5px solid var(--line-strong);background:transparent;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink);
+  transition:background .25s var(--ease),border-color .25s var(--ease);}
+.lamp-toggle:hover{border-color:var(--brass);}
+.lamp-toggle svg{width:19px;height:19px;}
+.nav-burger{display:none;background:none;border:none;cursor:pointer;color:var(--ink);}
+@media (max-width:920px){
+  .nav-links{position:fixed;top:68px;left:0;right:0;background:var(--paper);flex-direction:column;align-items:flex-start;
+    padding:1.25rem clamp(1.25rem,4vw,3rem) 1.75rem;border-bottom:1px solid var(--line);
+    transform:translateY(-130%);opacity:0;transition:transform .3s var(--ease),opacity .3s var(--ease);}
+  .nav-links.open{transform:translateY(0);opacity:1;}
+  .nav-burger{display:block;}
+}
+
+/* ============================================================
+   HERO + CATALOG DRAWER
+   ============================================================ */
+.hero{padding:clamp(7.5rem,12vw,10rem) 0 clamp(3rem,6vw,5rem);position:relative;z-index:2;}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(2.5rem,5vw,4rem);align-items:center;}
+@media (max-width:980px){.hero-grid{grid-template-columns:1fr;}}
+.hero h1{font-size:clamp(2.7rem,5.8vw,4.8rem);}
+.hero h1 .cursor-blink{display:inline-block;width:.07em;background:var(--oxblood);margin-left:.05em;
+  animation:blink 1s steps(1) infinite;height:.85em;vertical-align:-.08em;}
+@keyframes blink{50%{opacity:0;}}
+.hero-sub{font-size:clamp(1.05rem,1.6vw,1.2rem);max-width:46ch;margin-top:1.25rem;}
+.hero-ctas{display:flex;flex-wrap:wrap;gap:1rem;margin-top:2.1rem;}
+.trust{display:flex;align-items:center;gap:.85rem;margin-top:2.4rem;color:var(--graphite);font-size:.88rem;}
+.seal-stack{display:flex;}
+.seal{width:30px;height:30px;border-radius:50%;border:2px solid var(--paper);margin-left:-10px;
+  background:conic-gradient(from 200deg, var(--brass), var(--lamp), var(--oxblood), var(--brass));}
+.seal:first-child{margin-left:0;}
+
+.drawer-stage{perspective:1400px;}
+.drawer{position:relative;transform:rotateX(7deg) rotateY(-6deg);transform-style:preserve-3d;}
+.fanned-card{position:absolute;width:78%;height:62%;border-radius:6px;background:var(--card);
+  border:1px solid var(--card-edge);box-shadow:0 18px 40px -18px var(--shadow);}
+.fanned-card span{display:block;height:6px;border-radius:2px;background:var(--line);margin:14px 16px;}
+.fc1{top:6%;left:1%;transform:rotate(-9deg) translateZ(-40px);}
+.fc2{top:9%;left:18%;transform:rotate(6deg) translateZ(-20px);}
+.fc3{top:4%;left:9%;transform:rotate(-2deg) translateZ(-60px);opacity:.85;}
+
+.request-box{position:relative;background:var(--card);border:1px solid var(--card-edge);border-radius:10px;
+  padding:clamp(1.5rem,3vw,2.1rem);box-shadow:0 30px 60px -22px var(--shadow);transform:translateZ(40px);}
+.request-box::before{content:'';position:absolute;top:14px;left:50%;transform:translateX(-50%);width:60px;height:6px;
+  border-radius:3px;background:linear-gradient(120deg,var(--brass),var(--brass-bright));}
+.request-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding-top:.5rem;}
+.request-head .eyebrow::before{display:none;}
+.acc-no{font-family:var(--font-mono);font-size:.72rem;color:var(--graphite);}
+.request-form textarea{width:100%;min-height:96px;resize:vertical;background:transparent;border:none;
+  border-bottom:1px dashed var(--line-strong);font-family:var(--font-display);font-style:italic;font-size:1.08rem;
+  color:var(--ink);padding:.4rem .1rem 1rem;line-height:1.55;}
+.request-form textarea:focus{outline:none;border-bottom-color:var(--oxblood);}
+.request-form textarea::placeholder{color:var(--graphite);opacity:.85;}
+.chip-row{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0 1.2rem;}
+.chip{font-family:var(--font-mono);font-size:.72rem;padding:.4rem .7rem;border-radius:30px;border:1px solid var(--line-strong);
+  background:transparent;color:var(--graphite);cursor:pointer;transition:all .2s var(--ease);}
+.chip:hover{border-color:var(--brass);color:var(--ink);background:rgba(182,138,61,.1);}
+.request-foot{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+.hint{font-size:.78rem;color:var(--graphite);font-family:var(--font-mono);}
+
+/* ============================================================
+   STATS BAND
+   ============================================================ */
+.stats-band{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+@media (max-width:780px){.stats-band{grid-template-columns:repeat(2,1fr);}}
+.stat{padding:2.4rem 1.5rem;border-right:1px solid var(--line);text-align:center;}
+.stat:last-child{border-right:none;}
+@media (max-width:780px){
+  .stat{border-bottom:1px solid var(--line);}
+  .stat:nth-child(2n){border-right:none;}
+  .stat:nth-last-child(-n+2){border-bottom:none;}
+}
+.stat .num{font-family:var(--font-display);font-size:clamp(2rem,4vw,2.8rem);font-weight:600;color:var(--ink);}
+.stat .label{font-family:var(--font-mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--graphite);margin-top:.4rem;}
+
+/* ============================================================
+   MANIFESTO
+   ============================================================ */
+.manifesto{max-width:760px;margin:0 auto;position:relative;z-index:2;}
+.manifesto p.lead::first-letter{font-family:var(--font-display);font-size:4.1rem;font-weight:600;float:left;
+  line-height:.78;margin:.06em .14em 0 0;color:var(--oxblood);}
+.manifesto p.lead{font-size:1.22rem;}
+.pull{font-family:var(--font-display);font-style:italic;font-size:clamp(1.5rem,3vw,2.1rem);color:var(--ink);
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:2rem 0;margin:2.4rem 0;line-height:1.42;}
+
+/* ============================================================
+   LEDGER FEATURES
+   ============================================================ */
+.ledger{border-top:1px solid var(--line);position:relative;z-index:2;}
+.ledger-row{display:grid;grid-template-columns:64px 1fr 1.5fr;gap:2rem;padding:2.3rem 0;border-bottom:1px solid var(--line);
+  align-items:start;transition:background .3s var(--ease);}
+.ledger-row:hover{background:rgba(182,138,61,.06);}
+@media (max-width:780px){.ledger-row{grid-template-columns:1fr;gap:.6rem;}}
+.ledger-row .icon-sm{width:44px;height:44px;border-radius:50%;background:var(--ink);color:var(--paper);
+  display:flex;align-items:center;justify-content:center;}
+html[data-mode=night] .ledger-row .icon-sm{background:var(--brass);color:var(--ink);}
+.ledger-row .icon-sm svg{width:20px;height:20px;}
+.ledger-row h3{font-size:1.5rem;}
+.ledger-row p{font-size:.98rem;margin-top:.5rem;}
+
+/* ============================================================
+   HOW IT WORKS
+   ============================================================ */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  position:relative;z-index:2;}
+@media (max-width:900px){.steps{grid-template-columns:1fr;}}
+.step{padding:2.4rem 2rem;border-right:1px solid var(--line);position:relative;}
+.step:last-child{border-right:none;}
+@media (max-width:900px){.step{border-right:none;border-bottom:1px solid var(--line);} .step:last-child{border-bottom:none;}}
+.step .num{font-family:var(--font-mono);font-size:.85rem;color:var(--oxblood);}
+.step h3{font-size:1.3rem;margin:.85rem 0 .65rem;}
+.step p{font-size:.94rem;}
+
+/* ============================================================
+   SPOTLIGHT
+   ============================================================ */
+.spotlight{display:grid;grid-template-columns:.9fr 1.3fr;gap:2.5rem;align-items:center;background:var(--card);
+  border:1px solid var(--card-edge);border-radius:10px;padding:clamp(1.8rem,4vw,3rem);position:relative;z-index:2;}
+@media (max-width:900px){.spotlight{grid-template-columns:1fr;}}
+.spotlight-frame{aspect-ratio:3/4;border:1px solid var(--card-edge);border-radius:8px;background:
+  repeating-linear-gradient(135deg, var(--paper-deep) 0 2px, transparent 2px 14px), var(--paper);
+  display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+.spotlight-frame .seal-lg{width:88px;height:88px;border-radius:50%;
+  background:conic-gradient(from 180deg,var(--brass),var(--oxblood),var(--lamp),var(--brass));
+  display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.62rem;
+  color:#fff;text-align:center;letter-spacing:.05em;box-shadow:0 16px 30px -12px var(--shadow);}
+.badge-row{display:flex;flex-wrap:wrap;gap:.45rem;margin-bottom:.9rem;}
+.tldr-badge{display:inline-flex;align-items:center;gap:.4em;background:var(--lamp);color:#fff;
+  font-family:var(--font-mono);font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;padding:.3rem .65rem;border-radius:30px;}
+.oa-badge{display:inline-flex;align-items:center;gap:.4em;background:transparent;border:1px solid var(--brass);color:var(--brass);
+  font-family:var(--font-mono);font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;padding:.3rem .65rem;border-radius:30px;}
+.field-tag{font-family:var(--font-mono);font-size:.66rem;border:1px solid var(--line-strong);color:var(--graphite);
+  padding:.25rem .55rem;border-radius:30px;}
+.spotlight h3{font-size:clamp(1.4rem,2.4vw,1.85rem);margin-bottom:.7rem;}
+.tldr-line{font-style:italic;font-size:.92rem;color:var(--lamp);border-left:2px solid var(--lamp);padding-left:.7rem;margin:.8rem 0;}
+.spotlight .meta-row{display:flex;flex-wrap:wrap;gap:.4rem 1rem;font-family:var(--font-mono);font-size:.74rem;
+  color:var(--graphite);margin:1rem 0 1.3rem;}
+
+/* ============================================================
+   LIVE FINDER
+   ============================================================ */
+.search-toolbar{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;justify-content:space-between;margin-bottom:1.4rem;}
+.sort-group{display:flex;flex-wrap:wrap;gap:.4rem;border:1px solid var(--line-strong);border-radius:30px;padding:.25rem;}
+.sort-btn{font-family:var(--font-mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;
+  padding:.45rem .8rem;border-radius:30px;border:none;background:transparent;color:var(--graphite);cursor:pointer;
+  transition:all .2s var(--ease);}
+.sort-btn[aria-pressed="true"]{background:var(--ink);color:var(--paper);}
+#resultsStatus{font-family:var(--font-mono);font-size:.78rem;color:var(--graphite);}
+
+.filters-row{display:flex;flex-wrap:wrap;gap:.55rem;align-items:center;margin-bottom:1.4rem;}
+.filter-select{font-family:var(--font-mono);font-size:.76rem;border:1px solid var(--line-strong);background:transparent;
+  border-radius:30px;padding:.45rem .8rem;color:var(--ink);}
+.filter-toggle{display:inline-flex;align-items:center;gap:.45rem;font-family:var(--font-mono);font-size:.76rem;
+  color:var(--graphite);cursor:pointer;border:1px solid var(--line-strong);border-radius:30px;padding:.42rem .8rem;}
+.filter-toggle input{accent-color:var(--oxblood);}
+.field-chip{font-family:var(--font-mono);font-size:.7rem;border:1px solid var(--line-strong);border-radius:30px;
+  padding:.38rem .72rem;background:transparent;color:var(--graphite);cursor:pointer;}
+.field-chip[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+
+.results-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;}
+@media (max-width:980px){.results-grid{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:680px){.results-grid{grid-template-columns:1fr;}}
+
+.card{background:var(--card);border:1px solid var(--card-edge);border-radius:6px;padding:1.5rem 1.4rem 1.3rem;
+  position:relative;display:flex;flex-direction:column;gap:.65rem;
+  background-image:repeating-linear-gradient(to right, var(--paper-deep) 0 6px, transparent 6px 13px);
+  background-position:top -1px left 0;background-size:100% 1px;background-repeat:no-repeat;
+  transition:transform .3s var(--ease), box-shadow .3s var(--ease);}
+.card:hover{transform:translateY(-4px);box-shadow:0 22px 40px -22px var(--shadow);}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.75rem;}
+.card-top .acc{font-family:var(--font-mono);font-size:.7rem;color:var(--brass);white-space:nowrap;margin-top:.2rem;}
+.card h4{font-size:1.1rem;line-height:1.32;}
+.card .badge-row{margin-bottom:0;}
+.card .abstract{font-size:.87rem;color:var(--graphite);flex:1;}
+.card .meta{display:flex;flex-wrap:wrap;gap:.4rem .85rem;font-family:var(--font-mono);font-size:.71rem;color:var(--graphite);
+  border-top:1px dashed var(--line-strong);padding-top:.65rem;}
+.card .meta strong{color:var(--ink-soft);font-weight:600;}
+.card-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.3rem;}
+.stamp-btn{font-family:var(--font-mono);font-size:.71rem;text-transform:uppercase;letter-spacing:.03em;
+  padding:.4rem .65rem;border:1.5px solid var(--ink);border-radius:3px;background:transparent;color:var(--ink);
+  cursor:pointer;transition:all .2s var(--ease);}
+.stamp-btn:hover{background:var(--ink);color:var(--paper);}
+.stamp-btn.saved{background:var(--oxblood);border-color:var(--oxblood);color:#fff;}
+.stamp-btn.cite{border-color:var(--lamp);color:var(--lamp);}
+.stamp-btn.cite:hover{background:var(--lamp);color:#fff;}
+
+.state-block{text-align:center;padding:3.5rem 1.5rem;border:1px dashed var(--line-strong);border-radius:8px;}
+.state-block h3{font-size:1.3rem;margin-bottom:.6rem;}
+.state-block p{max-width:46ch;margin:0 auto;}
+.state-block.error{border-color:var(--oxblood);}
+.spinner{width:34px;height:34px;border-radius:50%;border:3px solid var(--line-strong);border-top-color:var(--oxblood);
+  margin:0 auto 1.1rem;animation:spin .9s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.skeleton-card{background:var(--card);border:1px solid var(--card-edge);border-radius:6px;padding:1.5rem 1.4rem;
+  display:flex;flex-direction:column;gap:.8rem;}
+.sk-line{height:11px;border-radius:3px;background:linear-gradient(90deg,var(--card-edge) 25%,var(--paper-deep) 50%,var(--card-edge) 75%);
+  background-size:200% 100%;animation:shimmer 1.4s infinite;}
+@keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+
+/* ============================================================
+   READING LIST DRAWER
+   ============================================================ */
+.rl-toggle{position:fixed;right:clamp(1rem,3vw,2.2rem);bottom:clamp(1rem,3vw,2.2rem);z-index:70;
+  display:flex;align-items:center;gap:.6rem;background:var(--ink);color:var(--paper);border:none;border-radius:30px;
+  padding:.85rem 1.3rem;cursor:pointer;font-family:var(--font-mono);font-size:.8rem;
+  box-shadow:0 16px 36px -14px var(--shadow);transition:transform .25s var(--ease);}
+.rl-toggle:hover{transform:translateY(-3px);}
+.rl-count{background:var(--oxblood);border-radius:50%;min-width:20px;height:20px;display:inline-flex;align-items:center;
+  justify-content:center;font-size:.7rem;padding:0 4px;}
+.rl-drawer{position:fixed;top:0;right:0;height:100%;width:min(420px,92vw);background:var(--paper-deep);z-index:95;
+  border-left:1px solid var(--line-strong);transform:translateX(100%);transition:transform .4s var(--ease);
+  display:flex;flex-direction:column;box-shadow:-30px 0 60px -20px rgba(0,0,0,.4);}
+.rl-drawer.open{transform:translateX(0);}
+.rl-head{display:flex;justify-content:space-between;align-items:center;padding:1.4rem 1.6rem;border-bottom:1px solid var(--line);}
+.rl-head h3{font-size:1.3rem;}
+.rl-close{background:none;border:none;cursor:pointer;color:var(--ink);}
+.rl-body{flex:1;overflow-y:auto;padding:1.2rem 1.6rem;display:flex;flex-direction:column;gap:.9rem;}
+.rl-item{background:var(--card);border:1px solid var(--card-edge);border-radius:6px;padding:1rem 1.1rem;}
+.rl-item h4{font-size:.96rem;line-height:1.3;margin-bottom:.4rem;}
+.rl-item .meta{font-family:var(--font-mono);font-size:.7rem;color:var(--graphite);margin-bottom:.6rem;}
+.rl-item-actions{display:flex;gap:.5rem;}
+.rl-empty{text-align:center;color:var(--graphite);padding:3rem 1rem;font-size:.9rem;}
+.rl-foot{padding:1.2rem 1.6rem;border-top:1px solid var(--line);}
+.scrim{position:fixed;inset:0;background:rgba(10,8,5,.45);z-index:90;opacity:0;pointer-events:none;transition:opacity .35s var(--ease);}
+.scrim.show{opacity:1;pointer-events:auto;}
+
+/* ============================================================
+   CITATION MODAL
+   ============================================================ */
+.modal{position:fixed;inset:0;z-index:110;display:flex;align-items:center;justify-content:center;padding:1.5rem;
+  opacity:0;pointer-events:none;transition:opacity .3s var(--ease);}
+.modal.open{opacity:1;pointer-events:auto;}
+.modal-card{background:var(--card);border:1px solid var(--card-edge);border-radius:10px;max-width:560px;width:100%;
+  padding:2rem;box-shadow:0 40px 80px -20px rgba(0,0,0,.5);transform:translateY(16px);transition:transform .3s var(--ease);
+  max-height:85vh;overflow-y:auto;}
+.modal.open .modal-card{transform:translateY(0);}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1.1rem;}
+.modal-head h3{font-size:1.2rem;line-height:1.3;}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--graphite);flex-shrink:0;}
+.tab-row{display:flex;gap:.4rem;margin-bottom:1rem;}
+.tab-btn{font-family:var(--font-mono);font-size:.74rem;padding:.45rem .9rem;border:1px solid var(--line-strong);
+  background:transparent;border-radius:30px;cursor:pointer;color:var(--graphite);}
+.tab-btn[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+.citation-out{background:var(--paper);border:1px solid var(--line-strong);border-radius:6px;padding:1rem;
+  font-family:var(--font-mono);font-size:.8rem;line-height:1.6;white-space:pre-wrap;word-break:break-word;min-height:90px;}
+.modal-foot{display:flex;justify-content:space-between;align-items:center;margin-top:1rem;}
+.copy-note{font-family:var(--font-mono);font-size:.73rem;color:var(--lamp);opacity:0;transition:opacity .2s var(--ease);}
+.copy-note.show{opacity:1;}
+
+/* ============================================================
+   FAQ
+   ============================================================ */
+.faq-list{max-width:780px;position:relative;z-index:2;border-top:1px solid var(--line);}
+.faq-item{border-bottom:1px solid var(--line);}
+.faq-q{width:100%;display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:1.3rem 0;
+  background:none;border:none;cursor:pointer;text-align:left;font-family:var(--font-display);font-size:1.12rem;color:var(--ink);}
+.faq-q .plus{transition:transform .3s var(--ease);flex-shrink:0;color:var(--brass);}
+.faq-item.open .faq-q .plus{transform:rotate(45deg);}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .35s var(--ease);}
+.faq-a p{padding-bottom:1.3rem;max-width:62ch;font-size:.96rem;}
+
+/* ============================================================
+   MARGINALIA
+   ============================================================ */
+.margin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2.2rem;position:relative;z-index:2;}
+@media (max-width:900px){.margin-grid{grid-template-columns:1fr;}}
+.margin-note{position:relative;padding-left:1.4rem;border-left:2px solid var(--brass);}
+.margin-note p.quote{font-family:var(--font-display);font-style:italic;font-size:1.08rem;color:var(--ink);}
+.margin-note .who{font-family:var(--font-mono);font-size:.74rem;color:var(--graphite);margin-top:.8rem;display:block;}
+
+/* ============================================================
+   PRICING (LEDGER)
+   ============================================================ */
+.pricing-ledger{border-top:1px solid var(--line-strong);position:relative;z-index:2;}
+.price-row{display:grid;grid-template-columns:1.3fr repeat(3,1fr);gap:1.5rem;padding:1.3rem 0;border-bottom:1px solid var(--line);
+  align-items:center;}
+.price-row.head{font-family:var(--font-mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--graphite);}
+.price-row .plan-name{font-family:var(--font-display);font-size:1.1rem;color:var(--ink);}
+.price-row .plan-amount{font-family:var(--font-mono);font-size:.85rem;color:var(--brass);display:block;margin-top:.2rem;}
+.price-row .feat-cell{text-align:center;font-size:1rem;color:var(--lamp);}
+.price-row .feat-cell.no{color:var(--line-strong);}
+@media (max-width:780px){
+  .price-row{grid-template-columns:1fr;gap:.5rem;text-align:left;padding:1.6rem 0;}
+  .price-row.head{display:none;}
+  .price-row .feat-cell{text-align:left;}
+  .price-row .feat-cell::before{content:attr(data-label) ': ';font-family:var(--font-mono);font-size:.7rem;color:var(--graphite);}
+}
+.price-cta-row{display:flex;gap:1rem;flex-wrap:wrap;margin-top:2rem;}
+
+/* ============================================================
+   CLOSING CTA
+   ============================================================ */
+.closing{text-align:center;padding:clamp(5rem,10vw,8rem) 0;position:relative;z-index:2;}
+.closing h2{font-size:clamp(2.3rem,5.6vw,4rem);max-width:18ch;margin:0 auto;}
+.closing p{max-width:50ch;margin:1.2rem auto 2.2rem;font-size:1.08rem;}
+.closing-ctas{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+footer{background:var(--ink);color:var(--paper);padding:4rem 0 2rem;}
+html[data-mode=night] footer{background:var(--paper-deep);border-top:1px solid var(--line);}
+.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:2.5rem;}
+@media (max-width:780px){.footer-grid{grid-template-columns:1fr 1fr;}}
+footer h4{color:var(--brass-bright);font-size:1rem;margin-bottom:1rem;font-family:var(--font-ui);font-weight:700;}
+footer p{color:rgba(237,227,204,.65);font-size:.92rem;}
+footer ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.6rem;}
+footer a{text-decoration:none;color:rgba(237,227,204,.75);font-size:.92rem;}
+footer a:hover{color:var(--brass-bright);}
+.foot-bottom{border-top:1px solid rgba(237,227,204,.15);margin-top:3rem;padding-top:1.5rem;text-align:center;
+  color:rgba(237,227,204,.5);font-size:.82rem;font-family:var(--font-mono);}
+.social{display:flex;gap:.8rem;}
+.social a{width:36px;height:36px;border:1px solid rgba(237,227,204,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.social svg{width:16px;height:16px;}
+
+.reveal{opacity:0;transform:translateY(26px);}
+html.reduce-motion .reveal{opacity:1;transform:none;}
+.sr-only{position:absolute;left:-9999px;}
+</style>
 </head>
-<body class="bg-black text-white overflow-x-hidden">
-    <div id="canvas-container"></div>
+<body>
 
-      <!-- Hero Section -->
-      <section class="min-h-screen relative overflow-hidden">
-        <div class="absolute inset-0 gradient-bg opacity-20"></div>
-        <nav class="glassmorphism fixed w-full z-50 py-4">
-            <div class="container mx-auto px-4 flex justify-between items-center">
-                <div class="text-2xl font-bold tracking-wider">ResearchAI Pro</div>
-                <div class="hidden md:flex space-x-8">
-                    <a href="#features" class="hover:text-blue-400 transition-colors">Features</a>
-                    <a href="#how-it-works" class="hover:text-blue-400 transition-colors">How It Works</a>
-                    <a href="#papers" class="hover:text-blue-400 transition-colors">Papers</a>
-                    <a href="#pricing" class="hover:text-blue-400 transition-colors">Pricing</a>
-                </div>
-                <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full transition-all transform hover:scale-105">
-                    Get Started
-                </button>
-            </div>
-        </nav>
-        
-        <div class="container mx-auto px-4 pt-32 pb-16">
-            <div class="grid md:grid-cols-2 gap-12 items-center">
-                <div class="space-y-8">
-                    <h1 class="text-5xl md:text-7xl font-bold leading-tight">
-                        <span class="typing" id="typing-text">Revolutionize Your Research</span>
-                    </h1>
-                    <p class="text-xl md:text-2xl text-gray-300">
-                        AI-powered real-time paper recommendations. Elevate your academic journey with cutting-edge technology.
-                    </p>
-                    <div class="flex flex-wrap gap-4">
-                        <button class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-full text-lg transition-all transform hover:scale-105">
-                            Start Researching
-                        </button>
-                        <button class="border border-white hover:bg-white hover:text-black px-8 py-4 rounded-full text-lg transition-all">
-                            Watch Demo
-                        </button>
-                    </div>
-                    <div class="flex items-center space-x-4 text-gray-400">
-                        <div class="flex -space-x-2">
-                            <img src="OIP (11).jpg" alt="User" class="w-10 h-10 rounded-full border-2 border-white">
-                            <img src="OIP (11).jpg" alt="User" class="w-10 h-10 rounded-full border-2 border-white">
-                            <img src="OIP (11).jpg" alt="User" class="w-10 h-10 rounded-full border-2 border-white">
-                        </div>
-                        <span>Trusted by 10,000+ researchers worldwide</span>
-                    </div>
-                </div>
-                <div class="relative">
-                    <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full filter blur-3xl opacity-30 animate-pulse"></div>
-                    <div class="glassmorphism rounded-2xl p-8 relative">
-                        <div class="bg-gray-900 rounded-lg p-6 neumorph">
-                            <div class="flex items-center mb-4">
-                                <div class="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
-                                <div class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
-                                <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                            </div>
-                            <pre class="text-sm"><code id="code-example" class="text-blue-400"></code></pre>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+<div id="preloader" aria-hidden="true">
+  <div class="preload-mark">RA</div>
+  <div class="preload-bar"><span id="preloadFill"></span></div>
+  <div class="preload-label">Opening the archive</div>
+</div>
 
-    <!-- Features Section -->
-    <section id="features" class="py-20">
-        <div class="container mx-auto px-4">
-            <h2 class="text-4xl md:text-5xl font-bold text-center mb-16">Advanced Features</h2>
-            <div class="grid md:grid-cols-3 gap-8">
-                <div class="glassmorphism rounded-xl p-6 transform hover:scale-105 transition-all">
-                    <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-6">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-semibold mb-4">Real-Time Analysis</h3>
-                    <p class="text-gray-400">Our AI analyzes your text in real-time using the Semantic Scholar API to find the most relevant papers.</p>
-                </div>
-                <div class="glassmorphism rounded-xl p-6 transform hover:scale-105 transition-all">
-                    <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-6">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-semibold mb-4">Smart Filtering</h3>
-                    <p class="text-gray-400">Advanced algorithms ensure you only see the most relevant and high-impact papers for your research.</p>
-                </div>
-                <div class="glassmorphism rounded-xl p-6 transform hover:scale-105 transition-all">
-                    <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-6">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-semibold mb-4">Citation Assistant</h3>
-                    <p class="text-gray-400">Automatically generate properly formatted citations for any paper you find.</p>
-                </div>
-            </div>
-        </div>
-    </section>
+<div id="cursorRing" aria-hidden="true"></div>
+<div id="cursorDot" aria-hidden="true"></div>
+<div class="progress-ribbon" id="progressRibbon" aria-hidden="true"></div>
 
-<!-- Papers Section -->
-<section id="papers" class="py-20">
-    <div class="container mx-auto px-4">
-        <h2 class="text-4xl md:text-5xl font-bold text-center mb-8">Recommended Papers</h2>
-        <p class="text-lg text-center mb-8">
-            Explore a wide range of scholarly articles with our dedicated Research Paper Finder. 
-            Dive into the latest research, explore trending topics, and enhance your knowledge.
-        </p>
-        <div class="text-center mt-12">
-            <a href="new1.html" class="inline-block bg-blue-600 text-white text-lg font-semibold py-3 px-8 rounded-lg shadow-lg hover:bg-blue-700 transition-colors">
-                View Full Research Paper Finder Website
-            </a>
-        </div>
+<a href="#main" class="skip-link">Skip to content</a>
+<div class="grain" aria-hidden="true"></div>
+<div id="motes" aria-hidden="true"></div>
+
+<header class="nav" id="siteNav">
+  <div class="nav-inner">
+    <a href="#main" class="brand">
+      <span class="plate">RA</span>
+      ResearchAI Pro
+    </a>
+    <nav>
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#papers">Papers</a></li>
+        <li><a href="#faq">FAQ</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+      </ul>
+    </nav>
+    <div class="nav-actions">
+      <button class="lamp-toggle" id="lampToggle" aria-pressed="false" aria-label="Switch to night reading mode">
+        <svg id="lampIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2M12 19.5v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2.5 12h2M19.5 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
+      </button>
+      <button class="btn btn-solid" id="getStartedBtn">Get Started</button>
+      <button class="nav-burger" id="burgerBtn" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
     </div>
-</section>
+  </div>
+</header>
 
+<main id="main">
 
-    
-    <footer class="py-12 bg-gray-900">
-        <div class="container mx-auto px-4">
-            <div class="grid md:grid-cols-4 gap-8">
-                <div>
-                    <h4 class="text-xl font-bold mb-4">ResearchAI Pro</h4>
-                    <p class="text-gray-400">Revolutionizing academic research with AI-powered recommendations.</p>
-                </div>
-                <div>
-                    <h4 class="text-xl font-bold mb-4">Quick Links</h4>
-                    <ul class="space-y-2">
-                        <li><a href="#features" class="text-gray-400 hover:text-white">Features</a></li>
-                        <li><a href="#papers" class="text-gray-400 hover:text-white">Papers</a></li>
-                        <li><a href="#pricing" class="text-gray-400 hover:text-white">Pricing</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="text-xl font-bold mb-4">Resources</h4>
-                    <ul class="space-y-2">
-                        <li><a href="#" class="text-gray-400 hover:text-white">Documentation</a></li>
-                        <li><a href="#" class="text-gray-400 hover:text-white">API</a></li>
-                        <li><a href="#" class="text-gray-400 hover:text-white">Support</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="text-xl font-bold mb-4">Connect</h4>
-                    <div class="flex space-x-4">
-                        <a href="#" class="text-gray-400 hover:text-white">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"></path>
-                            </svg>
-                        </a>
-                        <a href="#" class="text-gray-400 hover:text-white">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                                <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path>
-                            </svg>
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
-                © 2024 ResearchAI Pro. All rights reserved.
-            </div>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <p class="eyebrow">Live scholarly index · open access</p>
+        <h1 id="heroType">Revolutionize Your Research<span class="cursor-blink" aria-hidden="true"></span></h1>
+        <p class="hero-sub">AI-powered real-time paper recommendations. Elevate your academic journey with cutting-edge technology.</p>
+        <div class="hero-ctas">
+          <button class="btn btn-solid" id="startResearchingBtn">Start Researching</button>
+          <button class="btn btn-ghost" id="watchDemoBtn">See How It Works</button>
         </div>
-    </footer>
+        <div class="trust">
+          <div class="seal-stack" aria-hidden="true"><span class="seal"></span><span class="seal"></span><span class="seal"></span></div>
+          <span>Trusted by 10,000+ researchers worldwide</span>
+        </div>
+      </div>
 
-    <script>
-        // Initialize Three.js background
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        container.appendChild(renderer.domElement);
+      <div class="drawer-stage" id="drawerStage">
+        <div class="drawer" id="drawerEl">
+          <div class="fanned-card fc1" aria-hidden="true"><span style="width:55%"></span><span style="width:75%"></span><span style="width:40%"></span></div>
+          <div class="fanned-card fc2" aria-hidden="true"><span style="width:65%"></span><span style="width:50%"></span></div>
+          <div class="fanned-card fc3" aria-hidden="true"><span style="width:70%"></span><span style="width:35%"></span><span style="width:60%"></span></div>
 
-        // Create particles
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 5000;
-        const posArray = new Float32Array(particlesCount * 3);
+          <form class="request-box request-form" id="heroSearchForm">
+            <div class="request-head">
+              <p class="eyebrow">Request slip</p>
+              <span class="acc-no">No. 014‑A</span>
+            </div>
+            <label for="heroSearchInput" class="sr-only">Enter a research topic or abstract</label>
+            <textarea id="heroSearchInput" placeholder="Describe a topic, question, or paste an abstract — e.g. “transformer attention mechanisms for long-context retrieval”" required></textarea>
+            <div class="chip-row" id="suggestionChips">
+              <button type="button" class="chip" data-q="transformer attention mechanisms">transformer attention</button>
+              <button type="button" class="chip" data-q="CRISPR gene editing off-target effects">CRISPR gene editing</button>
+              <button type="button" class="chip" data-q="climate model uncertainty quantification">climate uncertainty</button>
+              <button type="button" class="chip" data-q="behavioral economics nudges">behavioral nudges</button>
+            </div>
+            <div class="request-foot">
+              <span class="hint">⌘/Ctrl + Enter to file the request</span>
+              <button type="submit" class="btn btn-brass btn-sm" id="heroSearchSubmit">Pull Records</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
 
-        for(let i = 0; i < particlesCount * 3; i++) {
-            posArray[i] = (Math.random() - 0.5) * 5;
-        }
+  <!-- STATS BAND -->
+  <section class="stats-band" aria-label="Key figures">
+    <div class="stat"><div class="num" id="statPapers" data-target="200" data-suffix="M+">0</div><div class="label">Papers in the open index</div></div>
+    <div class="stat"><div class="num" id="statResearchers" data-target="10000" data-suffix="+">0</div><div class="label">Researchers worldwide</div></div>
+    <div class="stat"><div class="num" id="statFormats" data-target="3" data-suffix="">0</div><div class="label">Citation formats supported</div></div>
+    <div class="stat"><div class="num" id="statSetup" data-target="0" data-suffix=""></div><div class="label">Sign-ups required to search</div></div>
+  </section>
 
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+  <!-- MANIFESTO -->
+  <section class="section">
+    <span class="watermark" aria-hidden="true">ARCHIVE</span>
+    <div class="wrap">
+      <div class="manifesto">
+        <p class="eyebrow">Why we built this</p>
+        <p class="lead reveal" style="margin-top:1.2rem;">Every great discovery begins in someone else's footnotes. Research has always been a conversation across decades of work, but the index that conversation happens in has gotten harder to search, not easier — buried behind paywalls, scattered across journals, indexed by keywords no one actually types.</p>
+        <p class="pull reveal">We didn't build another search box. We built a desk — a place to pull records, read what matters, and leave with a citation already in hand.</p>
+        <p class="reveal">ResearchAI Pro sits directly on top of the open scholarly graph. No proprietary database, no walled garden — just a faster way to file a request and get back something worth reading.</p>
+      </div>
+    </div>
+  </section>
 
-        const particlesMaterial = new THREE.PointsMaterial({
-            size: 0.005,
-            color: 0x4a90e2
-        });
+  <!-- FEATURES (LEDGER) -->
+  <section id="features" class="section" style="padding-top:0;">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">What's in the drawer</p>
+        <h2>Advanced Features</h2>
+      </div>
+      <div class="ledger">
+        <div class="ledger-row reveal">
+          <div class="icon-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg></div>
+          <h3>Real-Time Analysis</h3>
+          <p>Our AI analyzes your text in real-time using the Semantic Scholar API to find the most relevant papers.</p>
+        </div>
+        <div class="ledger-row reveal">
+          <div class="icon-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg></div>
+          <h3>Smart Filtering</h3>
+          <p>Advanced algorithms ensure you only see the most relevant and high-impact papers for your research.</p>
+        </div>
+        <div class="ledger-row reveal">
+          <div class="icon-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
+          <h3>Citation Assistant</h3>
+          <p>Automatically generate properly formatted citations for any paper you find.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particlesMesh);
+  <!-- HOW IT WORKS -->
+  <section id="how-it-works" class="section" style="padding-top:0;">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">The filing process</p>
+        <h2>How It Works</h2>
+      </div>
+      <div class="steps">
+        <div class="step reveal"><span class="num">01</span><h3>State your topic</h3><p>Type a research question, a topic, or paste an abstract into the request slip above.</p></div>
+        <div class="step reveal"><span class="num">02</span><h3>We search the index</h3><p>Your query is sent live to Semantic Scholar's open catalog of scholarly work — no waiting room.</p></div>
+        <div class="step reveal"><span class="num">03</span><h3>Take what you need</h3><p>Skim ranked results, save the ones worth keeping, and export a citation in one click.</p></div>
+      </div>
+    </div>
+  </section>
 
-        camera.position.z = 3;
+  <!-- SPOTLIGHT -->
+  <section class="section" style="padding-top:0;">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Pulled fresh, just now</p>
+        <h2>Paper of the Moment</h2>
+        <p>A live pull from the index — proof this isn't a mockup.</p>
+      </div>
+      <div class="spotlight" id="spotlightBox">
+        <div class="spotlight-frame"><div class="spinner" aria-hidden="true"></div></div>
+        <div>
+          <p class="eyebrow">Fetching a live record…</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-        function animate() {
-            requestAnimationFrame(animate);
-            particlesMesh.rotation.y += 0.001;
-            renderer.render(scene, camera);
-        }
-        animate();
+  <!-- LIVE FINDER -->
+  <section id="papers" class="section" style="padding-top:0;">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Card catalog · live</p>
+        <h2>Recommended Papers</h2>
+        <p>Explore a wide range of scholarly articles with our dedicated Research Paper Finder. Dive into the latest research, explore trending topics, and enhance your knowledge. Search runs against the live Semantic Scholar graph — every result below is real.</p>
+      </div>
 
-        // GSAP Animations
-        gsap.registerPlugin(ScrollTrigger, TextPlugin);
+      <form id="searchForm" style="margin-bottom:1.8rem;">
+        <label for="searchInput" class="sr-only">Enter your research topic or paste an abstract</label>
+        <textarea id="searchInput" rows="3" placeholder="Enter your research topic or paste an abstract here..."
+          style="width:100%;background:var(--card);border:1px solid var(--card-edge);border-radius:8px;padding:1rem 1.1rem;
+          font-family:var(--font-ui);font-size:.98rem;color:var(--ink);resize:vertical;"></textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:.85rem;">
+          <button type="submit" class="btn btn-solid" id="findBtn">Find Related Papers</button>
+        </div>
+      </form>
 
-        // Typing effect
-        const phrases = ["Revolutionize Your Research", "Discover Breakthroughs", "Accelerate Your Knowledge"];
-        let currentPhraseIndex = 0;
-        
-        function typeNextPhrase() {
-            const element = document.getElementById('typing-text');
-            const phrase = phrases[currentPhraseIndex];
-            
-            gsap.to(element, {
-                duration: 2,
-                text: phrase,
-                ease: "none",
-                onComplete: () => {
-                    gsap.delayedCall(2, () => {
-                        gsap.to(element, {
-                            duration: 1,
-                            text: "",
-                            ease: "none",
-                            onComplete: () => {
-                                currentPhraseIndex = (currentPhraseIndex + 1) % phrases.length;
-                                typeNextPhrase();
-                            }
-                        });
-                    });
-                }
-            });
-        }
-        typeNextPhrase();
+      <div class="filters-row" id="filtersRow">
+        <select class="filter-select" id="yearFilter" aria-label="Filter by publication year">
+          <option value="0">Any time</option>
+          <option value="2021">Since 2021</option>
+          <option value="2016">Since 2016</option>
+          <option value="2011">Since 2011</option>
+        </select>
+        <label class="filter-toggle"><input type="checkbox" id="oaFilter"> Open access only</label>
+        <div id="fieldChips" style="display:flex;flex-wrap:wrap;gap:.5rem;"></div>
+      </div>
 
-        // Code example animation
-        const codeExamples = [
-            `function analyzeResearch(text) {
-  const keywords = extractKeywords(text);
-  const papers = findRelevantPapers(keywords);
-  return rankAndRecommend(papers);
-}`,
-            `async function citationAssistant(draft) {
-  const gaps = identifyResearchGaps(draft);
-  const suggestions = await fetchCitations(gaps);
-  return generateInlineCitations(suggestions);
-}`,
-            `class AIResearchAssistant {
-  constructor() {
-    this.model = loadNeuralNetwork();
-    this.database = connectToPaperDatabase();
+      <div class="search-toolbar">
+        <div class="sort-group" role="group" aria-label="Sort results">
+          <button class="sort-btn" data-sort="relevance" aria-pressed="true">Relevance</button>
+          <button class="sort-btn" data-sort="citations" aria-pressed="false">Most Cited</button>
+          <button class="sort-btn" data-sort="influential" aria-pressed="false">Most Influential</button>
+          <button class="sort-btn" data-sort="year" aria-pressed="false">Newest</button>
+        </div>
+        <span id="resultsStatus" role="status" aria-live="polite"></span>
+      </div>
+
+      <div id="resultsGrid" class="results-grid"></div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="section" style="padding-top:0;">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Before you ask the librarian</p>
+        <h2>Frequently Asked</h2>
+      </div>
+      <div class="faq-list" id="faqList">
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Is this connected to a real paper index?<span class="plus">+</span></button>
+          <div class="faq-a"><p>Yes. Every search and the "Paper of the Moment" panel both call the live Semantic Scholar Graph API — nothing on this page is mocked or pre-recorded.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Can I export citations?<span class="plus">+</span></button>
+          <div class="faq-a"><p>Yes — click "Cite" on any card for APA, MLA, or BibTeX, generated from the paper's metadata and copyable in one click. Author splitting is automatic, so it's worth a quick check against your style guide for unusual names.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Do I need an account to save papers?<span class="plus">+</span></button>
+          <div class="faq-a"><p>No sign-up required. Your reading list lives in this browser tab for the current session — refreshing the page clears it, since nothing is sent to a server.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Which fields does the index cover?<span class="plus">+</span></button>
+          <div class="faq-a"><p>Semantic Scholar's open graph spans computer science, medicine, biology, physics, the social sciences, and more — results are filtered by field of study right on this page once you search.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Why did a search come back empty or fail?<span class="plus">+</span></button>
+          <div class="faq-a"><p>The public API is rate-limited, so an occasional failed request is the index being busy, not your query — wait a few seconds and try again, or rephrase more specifically.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MARGINALIA -->
+  <section class="section" style="padding-top:0;">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Notes left in the margin</p>
+        <h2>From the Reading Room</h2>
+      </div>
+      <div class="margin-grid">
+        <div class="margin-note reveal">
+          <p class="quote">"I stopped opening four tabs per topic. One request slip, ranked results, done."</p>
+          <span class="who">— Postdoctoral Researcher, Materials Science</span>
+        </div>
+        <div class="margin-note reveal">
+          <p class="quote">"The citation export alone saves me an evening every week during writing season."</p>
+          <span class="who">— PhD Candidate, Behavioral Economics</span>
+        </div>
+        <div class="margin-note reveal">
+          <p class="quote">"It's the rare research tool that feels built by someone who actually reads papers."</p>
+          <span class="who">— Research Librarian</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing" class="section" style="padding-top:0;">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Membership cards</p>
+        <h2>Pricing</h2>
+        <p>Start free. Upgrade when your reading list outgrows the drawer.</p>
+      </div>
+      <div class="pricing-ledger">
+        <div class="price-row head">
+          <span>Plan</span><span style="text-align:center;">Live search</span><span style="text-align:center;">Citation export</span><span style="text-align:center;">Reading list size</span>
+        </div>
+        <div class="price-row">
+          <div><span class="plan-name">Day Pass</span><span class="plan-amount">$0 / forever</span></div>
+          <span class="feat-cell" data-label="Live search">✓</span>
+          <span class="feat-cell" data-label="Citation export">✓</span>
+          <span class="feat-cell" data-label="Reading list size">10 papers</span>
+        </div>
+        <div class="price-row">
+          <div><span class="plan-name">Scholar's Desk</span><span class="plan-amount">$12 / mo</span></div>
+          <span class="feat-cell" data-label="Live search">✓ priority</span>
+          <span class="feat-cell" data-label="Citation export">✓ + weekly digest</span>
+          <span class="feat-cell" data-label="Reading list size">Unlimited</span>
+        </div>
+        <div class="price-row">
+          <div><span class="plan-name">Faculty Archive</span><span class="plan-amount">Custom</span></div>
+          <span class="feat-cell" data-label="Live search">✓ team-wide</span>
+          <span class="feat-cell" data-label="Citation export">✓ + shared lists</span>
+          <span class="feat-cell" data-label="Reading list size">Unlimited, shared</span>
+        </div>
+      </div>
+      <div class="price-cta-row">
+        <button class="btn btn-solid" id="pricingStartBtn">Start free</button>
+        <button class="btn btn-brass">Get Scholar's Desk</button>
+        <button class="btn btn-ghost">Talk to us about Faculty Archive</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLOSING CTA -->
+  <section class="closing">
+    <span class="watermark" aria-hidden="true">INDEX</span>
+    <div class="wrap">
+      <h2>Your next citation is one request slip away.</h2>
+      <p>No account, no installation — just a search box wired straight into the open scholarly graph.</p>
+      <div class="closing-ctas">
+        <button class="btn btn-solid" id="closingStartBtn">Start Researching</button>
+        <button class="btn btn-ghost" id="closingFaqBtn">Read the FAQ</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- READING LIST DRAWER -->
+<button class="rl-toggle" id="rlToggleBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="rlDrawer">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+  Reading List <span class="rl-count" id="rlCount">0</span>
+</button>
+
+<div class="scrim" id="scrim"></div>
+
+<aside class="rl-drawer" id="rlDrawer" role="dialog" aria-modal="true" aria-labelledby="rlTitle" aria-hidden="true">
+  <div class="rl-head">
+    <h3 id="rlTitle">Reading List</h3>
+    <button class="rl-close" id="rlCloseBtn" aria-label="Close reading list"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="rl-body" id="rlBody">
+    <p class="rl-empty">Nothing filed yet. Save a paper from any card to start your list.</p>
+  </div>
+  <div class="rl-foot">
+    <button class="btn btn-ghost" id="rlCopyAllBtn" style="width:100%;">Copy all as BibTeX</button>
+  </div>
+</aside>
+
+<!-- CITATION MODAL -->
+<div class="modal" id="citeModal" role="dialog" aria-modal="true" aria-labelledby="citeModalTitle" aria-hidden="true">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="citeModalTitle">Cite this paper</h3>
+      <button class="modal-close" id="citeCloseBtn" aria-label="Close citation dialog"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="tab-row" role="tablist" aria-label="Citation style">
+      <button class="tab-btn" data-style="apa" role="tab" aria-selected="true">APA</button>
+      <button class="tab-btn" data-style="mla" role="tab" aria-selected="false">MLA</button>
+      <button class="tab-btn" data-style="bibtex" role="tab" aria-selected="false">BibTeX</button>
+    </div>
+    <pre class="citation-out" id="citationOut"></pre>
+    <div class="modal-foot">
+      <span class="copy-note" id="copyNote">Copied to clipboard</span>
+      <button class="btn btn-solid btn-sm" id="copyCiteBtn">Copy citation</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap footer-grid">
+    <div>
+      <h4 style="color:var(--brass-bright);font-family:var(--font-display);font-size:1.2rem;">ResearchAI Pro</h4>
+      <p>Revolutionizing academic research with AI-powered recommendations.</p>
+      <div class="social" style="margin-top:1.3rem;">
+        <a href="#" aria-label="Twitter / X"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"/></svg></a>
+        <a href="#" aria-label="GitHub"><svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/></svg></a>
+      </div>
+    </div>
+    <div>
+      <h4>Quick Links</h4>
+      <ul><li><a href="#features">Features</a></li><li><a href="#papers">Papers</a></li><li><a href="#pricing">Pricing</a></li></ul>
+    </div>
+    <div>
+      <h4>Resources</h4>
+      <ul><li><a href="#">Documentation</a></li><li><a href="#">API</a></li><li><a href="#">Support</a></li></ul>
+    </div>
+    <div>
+      <h4>Connect</h4>
+      <ul><li><a href="#">Press</a></li><li><a href="#">Careers</a></li><li><a href="#">Contact</a></li></ul>
+    </div>
+  </div>
+  <div class="foot-bottom">© 2024 ResearchAI Pro. All rights reserved.</div>
+</footer>
+
+<script>
+(function(){
+'use strict';
+const reduceMotion = document.documentElement.classList.contains('reduce-motion');
+const pointerFine = window.matchMedia('(pointer:fine)').matches;
+
+/* ---------- Preloader ---------- */
+const preloader = document.getElementById('preloader');
+if(!reduceMotion){
+  const fill = document.getElementById('preloadFill');
+  let p = 0;
+  const iv = setInterval(() => {
+    p += Math.random()*22;
+    if(p >= 100){ p = 100; clearInterval(iv); setTimeout(() => preloader.classList.add('hide'), 220); }
+    fill.style.width = p + '%';
+  }, 110);
+  setTimeout(() => { clearInterval(iv); preloader.classList.add('hide'); }, 1500);
+} else {
+  preloader.remove();
+}
+
+/* ---------- Custom cursor ---------- */
+if(pointerFine){
+  document.body.classList.add('custom-cursor');
+  const dot = document.getElementById('cursorDot');
+  const ring = document.getElementById('cursorRing');
+  let mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
+  window.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; dot.style.left=mx+'px'; dot.style.top=my+'px'; });
+  function loop(){ rx += (mx-rx)*.18; ry += (my-ry)*.18; ring.style.left=rx+'px'; ring.style.top=ry+'px'; requestAnimationFrame(loop); }
+  loop();
+  document.addEventListener('mouseover', e => {
+    if(e.target.closest('a,button,.card,.chip,.field-chip,textarea,input,select')) ring.classList.add('active');
+  });
+  document.addEventListener('mouseout', e => {
+    if(e.target.closest('a,button,.card,.chip,.field-chip,textarea,input,select')) ring.classList.remove('active');
+  });
+} else {
+  document.getElementById('cursorDot').remove();
+  document.getElementById('cursorRing').remove();
+}
+
+/* ---------- Scroll progress + nav shadow ---------- */
+const ribbon = document.getElementById('progressRibbon');
+const navEl = document.getElementById('siteNav');
+function onScroll(){
+  const h = document.documentElement;
+  const pct = (h.scrollTop) / (h.scrollHeight - h.clientHeight) * 100;
+  ribbon.style.width = (isFinite(pct) ? pct : 0) + '%';
+  navEl.classList.toggle('scrolled', h.scrollTop > 8);
+}
+document.addEventListener('scroll', onScroll, {passive:true});
+onScroll();
+
+/* ---------- Lamp / day-night toggle ---------- */
+const lampToggle = document.getElementById('lampToggle');
+const lampIcon = document.getElementById('lampIcon');
+lampToggle.addEventListener('click', () => {
+  const night = document.documentElement.getAttribute('data-mode') === 'night';
+  document.documentElement.setAttribute('data-mode', night ? 'day' : 'night');
+  lampToggle.setAttribute('aria-pressed', String(!night));
+  lampToggle.setAttribute('aria-label', night ? 'Switch to night reading mode' : 'Switch to day reading mode');
+  lampIcon.innerHTML = night
+    ? '<circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2M12 19.5v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2.5 12h2M19.5 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>'
+    : '<path d="M20 14.5A8 8 0 1110.2 4a6.3 6.3 0 009.8 10.5z"/>';
+});
+
+/* ---------- Mobile nav ---------- */
+const burgerBtn = document.getElementById('burgerBtn');
+const navLinks = document.getElementById('navLinks');
+burgerBtn.addEventListener('click', () => {
+  const open = navLinks.classList.toggle('open');
+  burgerBtn.setAttribute('aria-expanded', String(open));
+});
+navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+  navLinks.classList.remove('open'); burgerBtn.setAttribute('aria-expanded','false');
+}));
+
+/* ---------- Dust motes ---------- */
+if(!reduceMotion && window.gsap){
+  const motesEl = document.getElementById('motes');
+  const count = window.innerWidth < 700 ? 8 : 16;
+  for(let i=0;i<count;i++){
+    const m = document.createElement('div');
+    const size = 2 + Math.random()*3;
+    m.className = 'mote';
+    m.style.width = size+'px'; m.style.height = size+'px';
+    m.style.left = Math.random()*100+'%';
+    m.style.top = Math.random()*100+'%';
+    motesEl.appendChild(m);
+    const dur = 14 + Math.random()*14;
+    gsap.to(m, {
+      y: -120 - Math.random()*120, x: (Math.random()-0.5)*80, opacity: 0,
+      duration: dur, repeat: -1, ease: 'none', delay: Math.random()*dur,
+      onRepeat(){ gsap.set(m, {y:0, opacity:.18, top: 90+Math.random()*10+'%'}); }
+    });
   }
-  
-  async suggest(userInput) {
-    const embedding = this.model.encode(userInput);
-    return this.database.findSimilar(embedding);
+}
+
+/* ---------- Hero parallax tilt ---------- */
+if(pointerFine && !reduceMotion && window.gsap){
+  const stage = document.getElementById('drawerStage');
+  const drawerEl = document.getElementById('drawerEl');
+  stage.addEventListener('mousemove', e => {
+    const rect = stage.getBoundingClientRect();
+    const px = (e.clientX - rect.left)/rect.width - 0.5;
+    const py = (e.clientY - rect.top)/rect.height - 0.5;
+    gsap.to(drawerEl, { rotateX: 7 + py*14, rotateY: -6 + px*16, duration:.6, ease:'power2.out', overwrite:true });
+  });
+  stage.addEventListener('mouseleave', () => {
+    gsap.to(drawerEl, { rotateX:7, rotateY:-6, duration:.8, ease:'power3.out' });
+  });
+}
+
+/* ---------- Hero typewriter ---------- */
+const heroType = document.getElementById('heroType');
+const phrases = ["Revolutionize Your Research","Discover Breakthroughs","Accelerate Your Knowledge"];
+function setHeroText(t){ heroType.firstChild.textContent = t; }
+if(reduceMotion){
+  setHeroText(phrases[0]);
+} else {
+  let pi = 0;
+  function typeLoop(){
+    const phrase = phrases[pi];
+    let i = 0;
+    setHeroText('');
+    const typeInt = setInterval(() => {
+      i++; setHeroText(phrase.slice(0,i));
+      if(i >= phrase.length){
+        clearInterval(typeInt);
+        setTimeout(() => {
+          let j = phrase.length;
+          const delInt = setInterval(() => {
+            j--; setHeroText(phrase.slice(0,j));
+            if(j<=0){ clearInterval(delInt); pi=(pi+1)%phrases.length; typeLoop(); }
+          }, 35);
+        }, 1700);
+      }
+    }, 55);
   }
-}`
-        ];
+  typeLoop();
+}
 
-        let currentCodeIndex = 0;
-        function updateCodeExample() {
-            const codeElement = document.getElementById('code-example');
-            gsap.to(codeElement, {
-                duration: 1,
-                opacity: 0,
-                onComplete: () => {
-                    codeElement.textContent = codeExamples[currentCodeIndex];
-                    gsap.to(codeElement, {
-                        duration: 1,
-                        opacity: 1
-                    });
-                    currentCodeIndex = (currentCodeIndex + 1) % codeExamples.length;
-                }
-            });
+/* ---------- Scroll reveals + count-up ---------- */
+if(window.gsap && window.ScrollTrigger){
+  gsap.registerPlugin(ScrollTrigger);
+  if(!reduceMotion){
+    gsap.utils.toArray('.reveal').forEach((el,i) => {
+      gsap.to(el, { opacity:1, y:0, duration:.8, ease:'power3.out',
+        scrollTrigger:{ trigger: el, start:'top 88%' }, delay: (i % 3) * 0.08 });
+    });
+    gsap.utils.toArray('.stat .num').forEach(el => {
+      const target = parseFloat(el.dataset.target);
+      const suffix = el.dataset.suffix || '';
+      ScrollTrigger.create({
+        trigger: el, start:'top 90%', once:true,
+        onEnter(){
+          const obj = {v:0};
+          gsap.to(obj, { v: target, duration: 1.5, ease:'power2.out',
+            onUpdate(){ el.textContent = Math.floor(obj.v).toLocaleString() + suffix; } });
         }
-        updateCodeExample();
-        setInterval(updateCodeExample, 5000);
+      });
+    });
+  } else {
+    gsap.set('.reveal', {opacity:1, y:0});
+    document.querySelectorAll('.stat .num').forEach(el => { el.textContent = el.dataset.target + (el.dataset.suffix||''); });
+  }
+} else {
+  document.querySelectorAll('.stat .num').forEach(el => { el.textContent = el.dataset.target + (el.dataset.suffix||''); });
+}
 
+/* ---------- Buttons that scroll/focus ---------- */
+function focusHero(){
+  document.getElementById('heroSearchInput').focus();
+  document.getElementById('heroSearchInput').scrollIntoView({behavior: reduceMotion ? 'auto':'smooth', block:'center'});
+}
+document.getElementById('getStartedBtn').addEventListener('click', focusHero);
+document.getElementById('startResearchingBtn').addEventListener('click', () => document.getElementById('heroSearchInput').focus());
+document.getElementById('pricingStartBtn').addEventListener('click', focusHero);
+document.getElementById('closingStartBtn').addEventListener('click', focusHero);
+document.getElementById('closingFaqBtn').addEventListener('click', () => document.getElementById('faq').scrollIntoView({behavior: reduceMotion?'auto':'smooth'}));
+document.getElementById('watchDemoBtn').addEventListener('click', () => document.getElementById('how-it-works').scrollIntoView({behavior: reduceMotion ? 'auto':'smooth'}));
 
-        // Semantic Scholar API integration
-        async function getRecommendations() {
-            const input = document.getElementById('research-input').value;
-            if (!input) return;
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const id = a.getAttribute('href').slice(1);
+    const target = document.getElementById(id);
+    if(target){ e.preventDefault(); target.scrollIntoView({behavior: reduceMotion ? 'auto':'smooth'}); }
+  });
+});
 
-            const loading = document.getElementById('loading');
-            const papersGrid = document.getElementById('papers-grid');
-            
-            loading.classList.remove('hidden');
-            papersGrid.innerHTML = '';
+/* ---------- Suggestion chips ---------- */
+document.querySelectorAll('#suggestionChips .chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const q = chip.dataset.q;
+    document.getElementById('heroSearchInput').value = q;
+    document.getElementById('searchInput').value = q;
+    document.getElementById('papers').scrollIntoView({behavior: reduceMotion ? 'auto':'smooth'});
+    runSearch(q);
+  });
+});
 
-            try {
-                const response = await fetch(`https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(input)}&limit=9&fields=title,abstract,authors,year,citationCount`);
-                const data = await response.json();
+/* ============================================================
+   LIVE SEARCH — Semantic Scholar
+   ============================================================ */
+const SS_FIELDS = 'title,abstract,authors,year,citationCount,url,venue,externalIds,tldr,isOpenAccess,fieldsOfStudy,influentialCitationCount,openAccessPdf';
 
-                loading.classList.add('hidden');
+const heroForm = document.getElementById('heroSearchForm');
+const heroInput = document.getElementById('heroSearchInput');
+const searchForm = document.getElementById('searchForm');
+const searchInput = document.getElementById('searchInput');
+const resultsGrid = document.getElementById('resultsGrid');
+const resultsStatus = document.getElementById('resultsStatus');
+const sortBtns = document.querySelectorAll('.sort-btn');
+const yearFilter = document.getElementById('yearFilter');
+const oaFilter = document.getElementById('oaFilter');
+const fieldChipsBox = document.getElementById('fieldChips');
 
-                data.data.forEach(paper => {
-                    const paperCard = document.createElement('div');
-                    paperCard.className = 'paper-card glassmorphism rounded-xl p-6';
-                    paperCard.innerHTML = `
-                        <div class="flex justify-between items-start mb-4">
-                            <h3 class="text-xl font-semibold">${paper.title}</h3>
-                            <span class="bg-blue-600 text-sm px-3 py-1 rounded-full">${paper.year}</span>
-                        </div>
-                        <p class="text-gray-400 mb-4">${paper.abstract ? paper.abstract.substring(0, 150) + '...' : 'No abstract available'}</p>
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center">
-                                <span class="text-sm">${paper.authors?.[0]?.name || 'Unknown Author'}</span>
-                            </div>
-                            <span class="text-sm text-gray-500">${paper.citationCount} citations</span>
-                        </div>
-                    `;
-                    papersGrid.appendChild(paperCard);
-                });
+let lastResults = [];
+let currentSort = 'relevance';
+let activeFields = new Set();
+let activeController = null;
 
-                // Scroll to papers section
-                document.getElementById('papers').scrollIntoView({ behavior: 'smooth' });
+function escapeHTML(str){
+  return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function authorNames(paper){
+  if(!paper.authors || !paper.authors.length) return 'Unknown Authors';
+  return paper.authors.map(a => a.name).join(', ');
+}
+function abstractExcerpt(paper){
+  if(!paper.abstract) return 'No abstract available';
+  return paper.abstract.length > 150 ? paper.abstract.slice(0,150) + '...' : paper.abstract;
+}
+function badgesFor(paper){
+  let out = '';
+  if(paper.tldr && paper.tldr.text) out += `<span class="tldr-badge">AI TL;DR</span>`;
+  if(paper.isOpenAccess) out += `<span class="oa-badge">Open access</span>`;
+  (paper.fieldsOfStudy||[]).slice(0,2).forEach(f => { out += `<span class="field-tag">${escapeHTML(f)}</span>`; });
+  return out;
+}
 
-            } catch (error) {
-                console.error('Error fetching papers:', error);
-                loading.classList.add('hidden');
-                alert('Error fetching papers. Please try again.');
-            }
-        }
+heroForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const q = heroInput.value.trim();
+  if(!q) return;
+  searchInput.value = q;
+  document.getElementById('papers').scrollIntoView({behavior: reduceMotion ? 'auto':'smooth'});
+  runSearch(q);
+});
+heroInput.addEventListener('keydown', e => { if((e.metaKey || e.ctrlKey) && e.key === 'Enter'){ heroForm.requestSubmit(); } });
 
-        function scrollToSearch() {
-            document.getElementById('research-input').scrollIntoView({ behavior: 'smooth' });
-            document.getElementById('research-input').focus();
-        }
+searchForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const q = searchInput.value.trim();
+  if(!q) return;
+  heroInput.value = q;
+  runSearch(q);
+});
 
-        function showDemo() {
-            // Implement demo functionality
-            alert('Demo feature coming soon!');
-        }
+function skeletonGrid(n){
+  let html = '';
+  for(let i=0;i<n;i++){
+    html += `<div class="skeleton-card"><div class="sk-line" style="width:80%"></div><div class="sk-line" style="width:95%"></div>
+      <div class="sk-line" style="width:60%"></div><div class="sk-line" style="width:40%;margin-top:.6rem;"></div></div>`;
+  }
+  return html;
+}
 
-        // Window resize handler
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+async function runSearch(query){
+  if(!query) return;
+  if(activeController) activeController.abort();
+  activeController = new AbortController();
 
-        // Smooth scroll for all anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                document.querySelector(this.getAttribute('href')).scrollIntoView({
-                    behavior: 'smooth'
-                });
-            });
-        });
-    </script>
+  resultsGrid.innerHTML = skeletonGrid(6);
+  resultsStatus.textContent = 'Searching…';
+  fieldChipsBox.innerHTML = '';
+
+  try{
+    const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&limit=12&fields=${SS_FIELDS}`;
+    const response = await fetch(url, { signal: activeController.signal });
+    if(!response.ok) throw new Error('HTTP ' + response.status);
+    const data = await response.json();
+
+    if(!data.data || data.data.length === 0){
+      lastResults = [];
+      resultsGrid.innerHTML = `<div class="state-block" style="grid-column:1/-1;"><h3>No results found</h3><p>Try a different search term, or pull one of the example slips above.</p></div>`;
+      resultsStatus.textContent = 'No results found.';
+      return;
+    }
+
+    lastResults = data.data;
+    activeFields = new Set();
+    yearFilter.value = '0';
+    oaFilter.checked = false;
+    buildFieldChips();
+    renderResults();
+
+  }catch(err){
+    if(err.name === 'AbortError') return;
+    console.error('Error fetching papers:', err);
+    resultsGrid.innerHTML = `<div class="state-block error" style="grid-column:1/-1;"><h3>The archive didn't answer</h3><p>An error occurred while fetching papers. Please try again later.</p></div>`;
+    resultsStatus.textContent = 'Request failed.';
+  }
+}
+
+function buildFieldChips(){
+  const set = new Set();
+  lastResults.forEach(p => (p.fieldsOfStudy||[]).forEach(f => set.add(f)));
+  fieldChipsBox.innerHTML = Array.from(set).slice(0,8).map(f =>
+    `<button type="button" class="field-chip" data-field="${escapeHTML(f)}" aria-pressed="false">${escapeHTML(f)}</button>`
+  ).join('');
+  fieldChipsBox.querySelectorAll('.field-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const f = btn.dataset.field;
+      if(activeFields.has(f)){ activeFields.delete(f); btn.setAttribute('aria-pressed','false'); }
+      else { activeFields.add(f); btn.setAttribute('aria-pressed','true'); }
+      renderResults();
+    });
+  });
+}
+
+yearFilter.addEventListener('change', renderResults);
+oaFilter.addEventListener('change', renderResults);
+
+function getFiltered(){
+  let list = lastResults.slice();
+  const cutoff = parseInt(yearFilter.value, 10);
+  if(cutoff) list = list.filter(p => (p.year||0) >= cutoff);
+  if(oaFilter.checked) list = list.filter(p => p.isOpenAccess);
+  if(activeFields.size) list = list.filter(p => (p.fieldsOfStudy||[]).some(f => activeFields.has(f)));
+
+  if(currentSort === 'citations') list.sort((a,b) => (b.citationCount||0) - (a.citationCount||0));
+  else if(currentSort === 'year') list.sort((a,b) => (b.year||0) - (a.year||0));
+  else if(currentSort === 'influential') list.sort((a,b) => (b.influentialCitationCount||0) - (a.influentialCitationCount||0));
+  return list;
+}
+
+function renderResults(){
+  if(!lastResults.length) return;
+  const list = getFiltered();
+  resultsStatus.textContent = `${list.length} of ${lastResults.length} record${lastResults.length===1?'':'s'} shown · sorted by ${currentSort}`;
+
+  if(!list.length){
+    resultsGrid.innerHTML = `<div class="state-block" style="grid-column:1/-1;"><h3>Nothing matches those filters</h3><p>Clear a filter chip or widen the year range to see more records.</p></div>`;
+    return;
+  }
+
+  resultsGrid.innerHTML = list.map((paper, i) => {
+    const id = paper.paperId || ('p'+i);
+    const citeCount = (paper.citationCount ?? 0).toLocaleString();
+    const infl = paper.influentialCitationCount ? `<span>${paper.influentialCitationCount.toLocaleString()} influential</span>` : '';
+    const tldrLine = (paper.tldr && paper.tldr.text) ? `<p class="tldr-line">${escapeHTML(paper.tldr.text)}</p>` : '';
+    return `
+    <article class="card" data-paper-id="${escapeHTML(id)}">
+      <div class="card-top">
+        <h4>${escapeHTML(paper.title || 'Untitled')}</h4>
+        <span class="acc">No. ${String(i+1).padStart(3,'0')}</span>
+      </div>
+      <div class="badge-row">${badgesFor(paper)}</div>
+      ${tldrLine}
+      <p class="abstract">${escapeHTML(abstractExcerpt(paper))}</p>
+      <div class="meta">
+        <span><strong>${escapeHTML(paper.year || 'N/A')}</strong></span>
+        <span>${escapeHTML(authorNames(paper))}</span>
+        <span>${citeCount} citations</span>
+        ${infl}
+      </div>
+      <div class="card-actions">
+        ${paper.url ? `<a class="stamp-btn" href="${escapeHTML(paper.url)}" target="_blank" rel="noopener noreferrer">View Paper</a>` : ''}
+        <button type="button" class="stamp-btn cite" data-action="cite" data-id="${escapeHTML(id)}">Cite</button>
+        <button type="button" class="stamp-btn" data-action="save" data-id="${escapeHTML(id)}">Save</button>
+      </div>
+    </article>`;
+  }).join('');
+  syncSaveButtons();
+}
+
+sortBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    sortBtns.forEach(b => b.setAttribute('aria-pressed','false'));
+    btn.setAttribute('aria-pressed','true');
+    currentSort = btn.dataset.sort;
+    if(lastResults.length) renderResults();
+  });
+});
+
+/* ---------- initial empty state ---------- */
+resultsGrid.innerHTML = `<div class="state-block" style="grid-column:1/-1;"><h3>The drawer is open</h3><p>File a request above — or pull one of the example slips from the hero — to see live results here.</p></div>`;
+
+/* ============================================================
+   SPOTLIGHT — live "paper of the moment"
+   ============================================================ */
+(async function loadSpotlight(){
+  const seeds = ['large language models reasoning','CRISPR gene editing','quantum error correction','climate tipping points','renewable energy storage','neural networks computer vision','mRNA vaccine design','behavioral economics decision making'];
+  const query = seeds[Math.floor(Math.random()*seeds.length)];
+  const box = document.getElementById('spotlightBox');
+  try{
+    const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&limit=1&fields=${SS_FIELDS}`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    const paper = data.data && data.data[0];
+    if(!paper) throw new Error('empty');
+
+    const tldrLine = (paper.tldr && paper.tldr.text) ? `<p class="tldr-line">${escapeHTML(paper.tldr.text)}</p>` : '';
+    const infl = paper.influentialCitationCount ? ` · ${paper.influentialCitationCount.toLocaleString()} influential` : '';
+    box.innerHTML = `
+      <div class="spotlight-frame"><div class="seal-lg">VERIFIED<br>RECORD</div></div>
+      <div>
+        <div class="badge-row">${badgesFor(paper)}</div>
+        <h3>${escapeHTML(paper.title || 'Untitled')}</h3>
+        ${tldrLine}
+        <div class="meta-row">
+          <span><strong>${escapeHTML(paper.year||'N/A')}</strong></span>
+          <span>${escapeHTML(authorNames(paper))}</span>
+          <span>${(paper.citationCount??0).toLocaleString()} citations${infl}</span>
+        </div>
+        <div class="card-actions">
+          ${paper.url ? `<a class="stamp-btn" href="${escapeHTML(paper.url)}" target="_blank" rel="noopener noreferrer">View Paper</a>` : ''}
+          <button type="button" class="stamp-btn cite" data-action="cite" data-id="spotlight">Cite</button>
+        </div>
+      </div>`;
+    window.__spotlightPaper = paper;
+    window.__spotlightPaper.paperId = 'spotlight';
+  }catch(err){
+    box.innerHTML = `
+      <div class="spotlight-frame"><div class="seal-lg">INDEX<br>BUSY</div></div>
+      <div>
+        <h3>The index didn't answer this time</h3>
+        <p>The public API may be rate-limited right now. Use the request slip above to pull your own live record instead.</p>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   READING LIST
+   ============================================================ */
+let readingList = [];
+const rlToggleBtn = document.getElementById('rlToggleBtn');
+const rlDrawer = document.getElementById('rlDrawer');
+const rlCloseBtn = document.getElementById('rlCloseBtn');
+const rlBody = document.getElementById('rlBody');
+const rlCount = document.getElementById('rlCount');
+const scrim = document.getElementById('scrim');
+
+function findPaperById(id){
+  if(id === 'spotlight' && window.__spotlightPaper) return window.__spotlightPaper;
+  return lastResults.find(p => (p.paperId || '') === id) || readingList.find(p => (p.paperId || '') === id);
+}
+function openDrawer(){
+  rlDrawer.classList.add('open'); rlDrawer.setAttribute('aria-hidden','false');
+  scrim.classList.add('show'); rlToggleBtn.setAttribute('aria-expanded','true');
+  rlCloseBtn.focus();
+}
+function closeDrawer(){
+  rlDrawer.classList.remove('open'); rlDrawer.setAttribute('aria-hidden','true');
+  if(!citeModal.classList.contains('open')) scrim.classList.remove('show');
+  rlToggleBtn.setAttribute('aria-expanded','false');
+  rlToggleBtn.focus();
+}
+rlToggleBtn.addEventListener('click', openDrawer);
+rlCloseBtn.addEventListener('click', closeDrawer);
+scrim.addEventListener('click', () => { closeDrawer(); closeModal(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closeDrawer(); closeModal(); } });
+
+function syncSaveButtons(){
+  document.querySelectorAll('[data-action="save"]').forEach(btn => {
+    const saved = readingList.some(p => (p.paperId||'') === btn.dataset.id);
+    btn.classList.toggle('saved', saved);
+    btn.textContent = saved ? 'Saved' : 'Save';
+  });
+}
+function renderReadingList(){
+  rlCount.textContent = readingList.length;
+  if(!readingList.length){
+    rlBody.innerHTML = '<p class="rl-empty">Nothing filed yet. Save a paper from any card to start your list.</p>';
+    return;
+  }
+  rlBody.innerHTML = readingList.map(p => `
+    <div class="rl-item">
+      <h4>${escapeHTML(p.title || 'Untitled')}</h4>
+      <div class="meta">${escapeHTML(p.year || 'N/A')} · ${escapeHTML(authorNames(p))}</div>
+      <div class="rl-item-actions">
+        <button class="stamp-btn cite" data-action="cite" data-id="${escapeHTML(p.paperId||'')}">Cite</button>
+        <button class="stamp-btn" data-action="remove" data-id="${escapeHTML(p.paperId||'')}">Remove</button>
+      </div>
+    </div>`).join('');
+}
+
+document.addEventListener('click', e => {
+  const saveBtn = e.target.closest('[data-action="save"]');
+  if(saveBtn){
+    const id = saveBtn.dataset.id;
+    const paper = findPaperById(id);
+    if(!paper) return;
+    const idx = readingList.findIndex(p => (p.paperId||'') === id);
+    if(idx >= 0) readingList.splice(idx,1); else readingList.push(paper);
+    syncSaveButtons(); renderReadingList();
+    return;
+  }
+  const removeBtn = e.target.closest('[data-action="remove"]');
+  if(removeBtn){
+    readingList = readingList.filter(p => (p.paperId||'') !== removeBtn.dataset.id);
+    syncSaveButtons(); renderReadingList();
+    return;
+  }
+  const citeBtn = e.target.closest('[data-action="cite"]');
+  if(citeBtn){
+    const paper = findPaperById(citeBtn.dataset.id);
+    if(paper) openCiteModal(paper);
+  }
+});
+
+/* ============================================================
+   CITATION MODAL
+   ============================================================ */
+const citeModal = document.getElementById('citeModal');
+const citeCloseBtn = document.getElementById('citeCloseBtn');
+const citationOut = document.getElementById('citationOut');
+const tabBtns = document.querySelectorAll('.tab-btn');
+const copyCiteBtn = document.getElementById('copyCiteBtn');
+const copyNote = document.getElementById('copyNote');
+let currentPaper = null;
+let currentStyle = 'apa';
+
+function splitName(name){
+  const parts = String(name||'').trim().split(/\s+/);
+  if(parts.length === 1) return {last: parts[0], initials: ''};
+  const last = parts.pop();
+  const initials = parts.map(p => p[0]?.toUpperCase()+'.').join(' ');
+  return {last, initials};
+}
+function formatAPA(p){
+  const authors = (p.authors||[]).map(a => { const n = splitName(a.name); return n.initials ? `${n.last}, ${n.initials}` : n.last; });
+  const authorStr = authors.length ? (authors.length>1 ? authors.slice(0,-1).join(', ') + ', & ' + authors.slice(-1) : authors[0]) : 'Unknown Authors';
+  const venue = p.venue ? ` ${p.venue}.` : '';
+  return `${authorStr} (${p.year || 'n.d.'}). ${p.title || 'Untitled'}.${venue} ${p.url || ''}`.trim();
+}
+function formatMLA(p){
+  const authors = (p.authors||[]);
+  let authorStr = 'Unknown Authors';
+  if(authors.length === 1){ const n = splitName(authors[0].name); authorStr = `${n.last}, ${authors[0].name.split(' ').slice(0,-1).join(' ')}`; }
+  else if(authors.length > 1){ const n = splitName(authors[0].name); authorStr = `${n.last}, ${authors[0].name.split(' ').slice(0,-1).join(' ')}, et al.`; }
+  const venue = p.venue ? ` ${p.venue},` : '';
+  return `${authorStr}. "${p.title || 'Untitled'}."${venue} ${p.year || 'n.d.'}, ${p.url || ''}`.trim();
+}
+function formatBibTeX(p){
+  const firstAuthor = p.authors && p.authors[0] ? splitName(p.authors[0].name).last.replace(/\W/g,'') : 'unknown';
+  const key = `${firstAuthor}${p.year || ''}`;
+  const authorField = (p.authors||[]).map(a=>a.name).join(' and ') || 'Unknown';
+  const doi = p.externalIds && p.externalIds.DOI ? `\n  doi    = {${p.externalIds.DOI}},` : '';
+  return `@article{${key},\n  author = {${authorField}},\n  title  = {${p.title || 'Untitled'}},\n  year   = {${p.year || 'n.d.'}},\n  journal = {${p.venue || ''}},${doi}\n  url    = {${p.url || ''}}\n}`;
+}
+function renderCitation(){
+  if(!currentPaper) return;
+  const map = {apa: formatAPA, mla: formatMLA, bibtex: formatBibTeX};
+  citationOut.textContent = map[currentStyle](currentPaper);
+}
+function openCiteModal(paper){
+  currentPaper = paper;
+  document.getElementById('citeModalTitle').textContent = `Cite: ${paper.title || 'Untitled'}`;
+  renderCitation();
+  citeModal.classList.add('open');
+  citeModal.setAttribute('aria-hidden','false');
+  scrim.classList.add('show');
+  citeCloseBtn.focus();
+}
+function closeModal(){
+  citeModal.classList.remove('open');
+  citeModal.setAttribute('aria-hidden','true');
+  if(!rlDrawer.classList.contains('open')) scrim.classList.remove('show');
+  copyNote.classList.remove('show');
+}
+citeCloseBtn.addEventListener('click', closeModal);
+tabBtns.forEach(btn => btn.addEventListener('click', () => {
+  tabBtns.forEach(b => b.setAttribute('aria-selected','false'));
+  btn.setAttribute('aria-selected','true');
+  currentStyle = btn.dataset.style;
+  renderCitation();
+}));
+copyCiteBtn.addEventListener('click', async () => {
+  const text = citationOut.textContent;
+  try{ await navigator.clipboard.writeText(text); }
+  catch(e){ const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+  copyNote.classList.add('show');
+  setTimeout(() => copyNote.classList.remove('show'), 1800);
+});
+document.getElementById('rlCopyAllBtn').addEventListener('click', async () => {
+  if(!readingList.length) return;
+  const text = readingList.map(formatBibTeX).join('\n\n');
+  try{ await navigator.clipboard.writeText(text); }
+  catch(e){ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+  const original = document.getElementById('rlCopyAllBtn').textContent;
+  document.getElementById('rlCopyAllBtn').textContent = 'Copied!';
+  setTimeout(() => { document.getElementById('rlCopyAllBtn').textContent = original; }, 1600);
+});
+
+/* ============================================================
+   FAQ ACCORDION
+   ============================================================ */
+document.querySelectorAll('.faq-item').forEach(item => {
+  const q = item.querySelector('.faq-q');
+  const a = item.querySelector('.faq-a');
+  q.addEventListener('click', () => {
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(other => {
+      if(other !== item){ other.classList.remove('open'); other.querySelector('.faq-q').setAttribute('aria-expanded','false'); other.querySelector('.faq-a').style.maxHeight = null; }
+    });
+    if(isOpen){ item.classList.remove('open'); q.setAttribute('aria-expanded','false'); a.style.maxHeight = null; }
+    else { item.classList.add('open'); q.setAttribute('aria-expanded','true'); a.style.maxHeight = a.scrollHeight + 'px'; }
+  });
+});
+
+})();
+</script>
 </body>
 </html>
